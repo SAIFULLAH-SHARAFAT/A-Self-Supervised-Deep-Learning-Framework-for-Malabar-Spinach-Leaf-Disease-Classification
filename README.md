@@ -1,65 +1,63 @@
 # 🌿 Malabar Spinach Leaf Disease Classification
-A Self-Supervised Deep Learning Framework for Malabar Spinach Leaf Disease Classification using Attention and Vision Transformers.  
+*A Self‑Supervised Deep Learning Framework using Attention and Vision Transformers*
 
-This repository contains the code, datasets, and experimental results supporting the paper:  
-**"A Self-Supervised Deep Learning Framework for Malabar Spinach Leaf Disease Classification Using Attention and Vision Transformers"**  
-*(Das Kabya et al., North South University, 2025)*  
+[![Paper](https://img.shields.io/badge/Paper-Draft-blue.svg)](#)
+[![HuggingFace](https://img.shields.io/badge/Weights-HuggingFace-black.svg)](https://huggingface.co/saifullah03/SpinachCBAMResNet50)
+[![Code](https://img.shields.io/badge/Notebook-GitHub-green.svg)](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/spinach-Vresnet%2CSwin%2CCBAM.ipynb)
 
----
+This repository hosts code and results for the paper:
 
-## 📖 Project Overview
-Malabar spinach (Basella alba) is a nutrient-rich vegetable widely consumed in Bangladesh, but its yield is often compromised by **Alternaria leaf spot** and **straw mite infestations**.  
+> **“A Self‑Supervised Deep Learning Framework for Malabar Spinach Leaf Disease Classification Using Attention and Vision Transformers.”**  
+> Nilavro Das Kabya, MD Shaifullah Sharafat, Rahimul Islam Emu, Mehrab Karim Opee, Riasat Khan (North South University)
 
-This project introduces the **first self-supervised and attention-based pipeline** for classifying Malabar spinach diseases, leveraging:
-- **Custom CNNs (SpinachCNN, Spinach-ResSENet)**  
-- **Vision Transformers (SpinachViT, SwinV2)**  
-- **Self-Supervised Pretraining with SimSiam**  
-- **Attention-enhanced ResNet (CBAM-ResNet-50)**  
-- **Hybrid Loss Functions (Cross-Entropy + Supervised Contrastive Loss)**  
-
-Our models are designed to be **lightweight, interpretable, and edge-deployable**, with strong performance on a curated spinach dataset.
+The project targets **three classes** on Malabar spinach leaves: **Alternaria**, **Straw mite**, and **Healthy**. We combine **self‑supervised SimSiam pretraining**, **CBAM attention**, and **hybrid losses** to achieve high accuracy with **edge‑friendly** models.
 
 ---
 
-## 📊 Key Results
-| Model | Backbone | Attention | Pretraining | Test Accuracy (%) | Macro ROC-AUC | Params (M) |
-|-------|----------|-----------|-------------|------------------|---------------|------------|
-| SpinachCNN | Custom CNN | None | None | 91.00 | 0.992 | 5.49 |
-| Spinach-ResSENet | ResNet + SE | SE | None | 96.01 | 0.996 | 5.53 |
-| SpinachViT | ViT-Small | — | None | 90.7 | 0.985 | 85.5 |
-| SimSiam-ResNet-50 | ResNet-50 | None | SimSiam | 94.95 | 0.998 | 23.5 |
-| **SimSiam-CBAM-ResNet-50** | ResNet-50 + CBAM | Yes | SimSiam | **96.97** | **0.9982** | 23.6 |
-| SwinV2-Small | Swin Transformer | Windowed | ImageNet-21k | **97.98** | **1.0000** | 28.0 |
+## 🔗 Resources
 
-> 🔑 Takeaway: SwinV2 reached the highest accuracy but is too heavy for real-world farming. The **SimSiam-CBAM-ResNet-50** is the most practical domain-optimized solution.  
+- **Trained Weights (Hugging Face):**  
+  https://huggingface.co/saifullah03/SpinachCBAMResNet50  
+  - `simsiam_cbam_pretrained_final.pth` → **self‑supervised backbone only** (for further fine‑tuning)  
+  - `best_finetuned_cbam.pth` → **final CBAM classifier** (✅ **use this for deployment**)  
+
+- **Notebook (Swin, Vanilla ResNet, CBAM + Grad‑CAM):**  
+  https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/spinach-Vresnet%2CSwin%2CCBAM.ipynb
 
 ---
 
-## 🗂️ Dataset
-- **Total samples:** 2100 images  
-- **Classes:**  
-  - Healthy (39.9%)  
-  - Straw mite (31.9%)  
-  - Alternaria leaf spot (28.1%)  
-- Collected from **Habiganj Agricultural University** and supplemented with public datasets.  
+## 🧭 Project Overview
 
-👉 Dataset will be released **after paper acceptance**.  
+- **Architectures:** SpinachCNN (custom), Spinach‑ResSENet (SE), Vision Transformers (ViT, SwinV2), and **SimSiam‑CBAM‑ResNet‑50**.
+- **Training strategy:** Self‑supervised pretraining (SimSiam) → supervised fine‑tuning (CE and CE+SupCon).
+- **Explainability:** Grad‑CAM, Grad‑CAM++, LayerCAM for lesion‑focused heatmaps.
+- **Edge focus:** Competitive accuracy with fewer parameters for realistic deployment.
 
 ---
 
-## ⚙️ Methods
-- **Data Augmentation:** flips, rotations, color jitter, Gaussian noise, salt-and-pepper noise  
-- **Models:** SpinachCNN, Spinach-ResSENet, SpinachViT, Swin Transformer, SimSiam-CBAM-ResNet-50  
-- **Training:**  
-  - Image size: `224x224`  
-  - Optimizers: AdamW / SGD + cosine annealing  
-  - Loss: CE + Supervised Contrastive Loss  
-- **Evaluation Metrics:** Accuracy, F1-score, ROC-AUC, Calibration Error  
+## 🧪 Benchmarks (Single‑Crop Malabar Spinach)
+
+| Model                              | Backbone           | Pretraining       | Attention | Test Acc. (%) | Macro ROC‑AUC | Params (M) |
+|-----------------------------------|--------------------|-------------------|-----------|---------------|---------------|-----------:|
+| SpinachCNN                        | Custom CNN         | None              | None      | 91.00         | 0.992         | 5.49       |
+| Spinach‑ResSENet                  | ResNet + SE        | None              | SE        | 96.01         | 0.996         | 5.53       |
+| SpinachViT                        | ViT‑Small          | None              | —         | 90.70         | 0.985         | 85.5       |
+| SimSiam‑ResNet‑50                 | ResNet‑50          | SimSiam           | None      | 94.95         | 0.9984        | 23.5       |
+| **SimSiam‑CBAM‑ResNet‑50**        | ResNet‑50 + CBAM   | SimSiam           | **CBAM**  | **96.97**     | **0.9982**    | 23.6       |
+| **SwinV2‑Small (Hybrid)**         | SwinV2‑Small       | ImageNet‑21k      | Windowed  | **97.98**     | **1.0000**    | 28.0       |
+
+> **Deployment note:** SwinV2‑Small is most accurate but heavier. **SimSiam‑CBAM‑ResNet‑50** offers the best trade‑off for web/edge.
 
 ---
 
-## 🚀 Getting Started
-### 1. Clone repo
+## 📦 Installation
+
 ```bash
-git clone https://github.com/<your-username>/Malabar-Spinach-Leaf-Disease.git
-cd Malabar-Spinach-Leaf-Disease
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
+
+# Python 3.10+ recommended
+python -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+
+pip install -r requirements.txt
