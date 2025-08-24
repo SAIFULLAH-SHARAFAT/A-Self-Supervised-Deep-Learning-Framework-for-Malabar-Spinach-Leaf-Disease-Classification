@@ -21,8 +21,7 @@ The project targets **three classes** on Malabar spinach leaves: **Alternaria**,
   - `simsiam_cbam_pretrained_final.pth` → **self‑supervised backbone only** (for further fine‑tuning)  
   - `best_finetuned_cbam.pth` → **final CBAM classifier** (✅ **use this for deployment**)  
 
-- **Notebook (Swin, Vanilla ResNet, CBAM + Grad‑CAM):**  
-  https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/spinach-Vresnet%2CSwin%2CCBAM.ipynb
+- **Notebook (Swin, ResNet, CBAM + Grad-CAM):** [GitHub Link](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/spinach-Vresnet%2CSwin%2CCBAM.ipynb)
 
 ---
 
