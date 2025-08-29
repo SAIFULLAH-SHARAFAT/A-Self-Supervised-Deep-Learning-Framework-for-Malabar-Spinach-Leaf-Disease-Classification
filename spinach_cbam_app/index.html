@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Malabar Spinach Disease Detector — CBAM-ResNet</title>
+  <link rel="icon" type="image/png" href="/static/favicon.ico" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="overlay"></div>
+    <div class="hero-content">
+      <h1>Malabar Spinach Disease Detector</h1>
+      <p>CBAM-ResNet backend with explainability. Classifies Alternaria, Straw Mite, and Healthy leaves.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="row">
+        <div class="uploader">
+          <div class="file-row">
+            <label for="imageInput" class="btn">Choose an image</label>
+            <input id="imageInput" type="file" accept="image/*" />
+            <span id="fileName" class="file-name" title="No file chosen">No file chosen</span>
+          </div>
+
+          <div class="row" style="grid-template-columns:1fr 1fr;">
+            <label class="checkbox">
+              <input id="explain" type="checkbox" />
+              <span>Generate heatmap</span>
+            </label>
+            <label class="checkbox">
+              <input id="tta" type="checkbox" />
+              <span>Use TTA (flip)</span>
+            </label>
+          </div>
+
+          <div class="row" style="grid-template-columns:1fr 1fr;">
+            <div>
+              <label for="camMethod" class="label">Explainer</label>
+              <select id="camMethod" class="select">
+                <option value="layercam" selected>LayerCAM</option>
+                <option value="eigencam">EigenCAM</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Model device</label>
+              <div id="health" class="health">Checking…</div>
+            </div>
+          </div>
+
+          <button id="predictBtn" class="btn primary">Predict</button>
+        </div>
+
+        <div class="preview">
+          <img id="previewImg" alt="Preview" />
+        </div>
+      </div>
+
+      <div id="result" class="result"></div>
+    </section>
+  </main>
+
+  <footer style="text-align:center;color:#92a0c0;font-size:12px;margin:16px 0 24px">
+    &copy; <span id="year"></span> — made by <strong> MD SHAIFULLAH SHARAFAT</strong>
+    <br>API endpoint: <code>/predict</code> — Send POST requests with image file.
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      var yr = document.getElementById("year");
+      if (yr) yr.textContent = new Date().getFullYear();
+    });
+  </script>
+  <script src="/static/script.js" defer></script>
+</body>
+</html>
