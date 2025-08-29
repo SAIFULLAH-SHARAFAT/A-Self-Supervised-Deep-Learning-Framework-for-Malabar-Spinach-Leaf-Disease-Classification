@@ -9,9 +9,9 @@
 
 ---
 
-##  Web Demo Video
+## Web Demo Video
 
-![Web Demo](WEB+Deployment.gif)
+<img src="WEB+Deployment.gif" width="1200" alt="Web Demo">
 
 ---
 
