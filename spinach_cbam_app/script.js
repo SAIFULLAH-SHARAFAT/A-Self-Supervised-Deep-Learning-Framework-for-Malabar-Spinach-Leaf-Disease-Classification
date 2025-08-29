@@ -19,6 +19,26 @@
     return head + body + '</tbody></table></div>';
   }
 
+  function renderFungicides(list){
+    if (!list || !list.length) return '';
+    var html = '<h4>Fungicide Options</h4><table class="pretty"><thead><tr><th>Name</th><th>FRAC</th><th>Notes</th></tr></thead><tbody>';
+    list.forEach(function(f){
+      html += '<tr><td>'+f[0]+'</td><td>'+f[1]+'</td><td>'+f[2]+'</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function renderPrevention(list){
+    if (!list || !list.length) return '';
+    var html = '<h4>Prevention Steps</h4><ul>';
+    list.forEach(function(s){
+      html += '<li><strong>'+s[0]+':</strong> '+s[1]+'</li>';
+    });
+    html += '</ul>';
+    return html;
+  }
+
   function checkHealth(){
     fetch("/health").then(function(r){ return r.json(); }).then(function(h){
       var node = $("health");
@@ -70,15 +90,41 @@
       }).then(function(res){
         if (!res.ok) throw new Error(res.data && res.data.error || "Predict failed");
         var d = res.data || res;
+
+        // Core prediction summary / abstain rendering
         var prob = d.probability || 0;
         var predPct = (prob * 100).toFixed(2);
-        var html = ''
-          + '<div><span class="label">Prediction:</span> ' + d.label + ' ('+ predPct +'%)'
-          + (d.tta_used ? ' — with TTA' : '') + '</div>';
+
+        var header = '';
+        if (d.decision === "abstain" && d.top2 && d.top2.length >= 2) {
+          var a = d.top2[0], b = d.top2[1];
+          header = '<div><span class="label">Uncertain between:</span> '
+                 + a.class + ' (' + (a.prob*100).toFixed(1) + '%) and '
+                 + b.class + ' (' + (b.prob*100).toFixed(1) + '%)</div>';
+        } else {
+          header = '<div><span class="label">Prediction:</span> ' + d.label + ' ('+ predPct +'%)'
+                 + (d.tta_used ? ' — TTA' : '')
+                 + (d.used_multicrop ? ' — multi-crop' : '')
+                 + '</div>';
+        }
+
+        var html = header;
         if (d.inference_time_ms){ html += '<div><span class="label">Inference time:</span> ' + d.inference_time_ms + ' ms</div>'; }
         if (d.cam_method){ html += '<div><span class="label">Explainer:</span> ' + d.cam_method + '</div>'; }
+
+        // Probabilities table
         if (d.probs){ html += '<h4>Class Probabilities</h4>' + renderProbs(d.probs); }
+
+        // Domain analysis block
+        if (d.analysis_text){ html += '<h4>Domain Analysis</h4><p>' + d.analysis_text + '</p>'; }
+        if (d.recommendations){
+          if (d.recommendations.fungicides){ html += renderFungicides(d.recommendations.fungicides); }
+          if (d.recommendations.prevention){ html += renderPrevention(d.recommendations.prevention); }
+        }
+
+        // Optional heatmap
         if (d.heatmap){ html += '<h4>Heatmap</h4><div class="heatmap"><img src="'+ d.heatmap +'" alt="Heatmap"/></div>'; }
+
         resultDiv.innerHTML = html;
       }).catch(function(err){
         showError(err.message || err);

@@ -29,12 +29,55 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # Fallback classes (overridden by checkpoint meta if present)
 CLASS_NAMES: List[str] = [c.strip() for c in os.getenv(
     "CLASSES",
-    "Alternaria Leaf Disease,Straw Mite Leaf Disease,Healthy"
+    "Alternaria Leaf Disease, Healthy, Straw Mite Leaf Disease"
 ).split(",")]
 
 USE_TTA = os.getenv("USE_TTA", "false").lower() in ("1", "true", "yes")
 MODEL_TEMP = float(os.getenv("MODEL_TEMP", "1.0"))
 RETURN_ALL_PROBS = os.getenv("RETURN_ALL_PROBS", "true").lower() in ("1", "true", "yes")
+
+# ---- Inference-time toggles (no training required) ----
+USE_MULTICROP = os.getenv("USE_MULTICROP", "true").lower() in ("1","true","yes")  # 5-crop TTA
+
+# Class-specific min confidence to accept a decision
+MIN_CONF_HEALTHY    = float(os.getenv("MIN_CONF_HEALTHY",    "0.80"))  # tightened
+MIN_CONF_STRAWMITE  = float(os.getenv("MIN_CONF_STRAWMITE",  "0.55"))
+MIN_CONF_ALTERNARIA = float(os.getenv("MIN_CONF_ALTERNARIA", "0.50"))
+
+# Abstain if top-2 are too close (helps Healthy vs Straw Mite)
+ABSTAIN_DELTA = float(os.getenv("ABSTAIN_DELTA", "0.12"))  # widened
+
+# ---- Optional per-class logit biases (added BEFORE softmax). Tune gently (0.0–0.6). ----
+LOGIT_BIAS_ALTERNARIA = float(os.getenv("LOGIT_BIAS_ALTERNARIA", "0.00"))
+LOGIT_BIAS_STRAWMITE  = float(os.getenv("LOGIT_BIAS_STRAWMITE",  "0.35"))  # nudge SM up
+LOGIT_BIAS_HEALTHY    = float(os.getenv("LOGIT_BIAS_HEALTHY",    "0.00"))  # set negative if Healthy still dominates
+
+# --- Domain analysis text & recommendations ---
+ALT_TEXT = (
+    "Alternaria infection in spinach initially presents as small, circular spots with distinct concentric rings. "
+    "Over time, these lesions become irregular in shape. The circular spots are characterized by dark black margins "
+    "surrounding a necrotic center."
+)
+STRAW_TEXT = (
+    "Straw mites are pests that infest Malabar spinach, often leading to substantial crop losses. "
+    "Because they reside deep within plant tissues, direct visual identification is challenging. "
+    "Their presence is typically inferred from leaf spotting and a general decline in plant vigor."
+)
+HEALTHY_TEXT = "Congratulations — the spinach appears to be in excellent health."
+
+STRAW_PREV = [
+    ("Sanitation", "Clean plant debris, tools, and surroundings"),
+    ("Monitoring", "Weekly inspections for early signs"),
+    ("Biocontrol", "Release predatory mites; maintain habitat for natural enemies"),
+]
+
+ALTERNARIA_FUNG = [
+    ("Azoxystrobin", "11", "Systemic; broad-spectrum"),
+    ("Chlorothalonil", "M5", "Contact protectant"),
+    ("Mancozeb", "M3", "Broad-spectrum; protectant"),
+    ("Difenoconazole", "3", "Systemic; rotate to avoid resistance"),
+    ("Copper-based fungicides", "M1", "Organic-compatible; protectant only"),
+]
 
 # =========================
 # Transforms (mirror eval)
@@ -63,10 +106,6 @@ except Exception:
 # CBAM (Conv2d-style CA keys: ca.fc1 / ca.fc2 ; SA key: sa.conv)
 # =========================
 class ChannelAttentionConv(nn.Module):
-    """
-    Channel attention that matches checkpoint keys:
-      ca.fc1.weight [r, C, 1, 1], ca.fc2.weight [C, r, 1, 1]
-    """
     def __init__(self, in_planes: int, ratio: int = 16):
         super().__init__()
         hidden = max(1, in_planes // ratio)
@@ -76,78 +115,50 @@ class ChannelAttentionConv(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.fc2 = nn.Conv2d(hidden, in_planes, kernel_size=1, bias=False)
         self.sigmoid = nn.Sigmoid()
-
     def forward_one(self, x):
-        x = self.fc1(x)
-        x = self.relu(x)
-        x = self.fc2(x)
-        return x
-
+        x = self.fc1(x); x = self.relu(x); x = self.fc2(x); return x
     def forward(self, x):
         avg_out = self.forward_one(self.avg_pool(x))
         max_out = self.forward_one(self.max_pool(x))
-        out = avg_out + max_out
-        return self.sigmoid(out)
-
+        return self.sigmoid(avg_out + max_out)
 
 class SpatialAttentionConv(nn.Module):
-    """
-    Spatial attention that matches checkpoint key:
-      sa.conv.weight
-    """
     def __init__(self, kernel_size: int = 7):
         super().__init__()
         padding = 3 if kernel_size == 7 else 1
         self.conv = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
-
     def forward(self, x):
         avg_out = torch.mean(x, dim=1, keepdim=True)
         max_out, _ = torch.max(x, dim=1, keepdim=True)
         x = torch.cat([avg_out, max_out], dim=1)
-        x = self.conv(x)
-        return self.sigmoid(x)
-
+        return self.sigmoid(self.conv(x))
 
 class CBAMCompatBottleneck(Bottleneck):
-    """
-    ResNet bottleneck where CBAM modules live as attributes:
-      self.ca (ChannelAttentionConv)
-      self.sa (SpatialAttentionConv)
-    giving keys:
-      ... .ca.fc1.weight, .ca.fc2.weight, .sa.conv.weight
-    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         planes = self.conv3.out_channels
         self.ca = ChannelAttentionConv(planes, ratio=16)
         self.sa = SpatialAttentionConv(kernel_size=7)
-
     def forward(self, x):
         identity = x
-
         out = self.conv1(x); out = self.bn1(out); out = self.relu(out)
         out = self.conv2(out); out = self.bn2(out); out = self.relu(out)
         out = self.conv3(out); out = self.bn3(out)
-
         out = out * self.ca(out)
         out = out * self.sa(out)
-
         if self.downsample is not None:
             identity = self.downsample(x)
         out = out + identity
         out = self.relu(out)
         return out
 
-
 def _make_layer(block, inplanes, planes, blocks, stride=1, dilate=False, norm_layer=None):
-    if norm_layer is None:
-        norm_layer = nn.BatchNorm2d
+    if norm_layer is None: norm_layer = nn.BatchNorm2d
     downsample = None
     previous_dilation = 1
     if dilate:
-        dilation = previous_dilation * stride
-        stride = 1
+        dilation = previous_dilation * stride; stride = 1
     else:
         dilation = 1
     if stride != 1 or inplanes != planes * block.expansion:
@@ -160,7 +171,6 @@ def _make_layer(block, inplanes, planes, blocks, stride=1, dilate=False, norm_la
     for _ in range(1, blocks):
         layers.append(block(inplanes, planes, groups=1, base_width=64, dilation=dilation, norm_layer=norm_layer))
     return nn.Sequential(*layers), inplanes
-
 
 # =========================
 # Utilities to read checkpoint FIRST
@@ -176,15 +186,12 @@ def _load_raw_ckpt(path: str) -> Dict[str, Any]:
 def _extract_state_and_meta(raw: Dict[str, Any]) -> Tuple[Dict[str, torch.Tensor], Dict[str, Any]]:
     meta = {}
     if "model" in raw and isinstance(raw["model"], dict):
-        state = raw["model"]
-        meta = raw.get("meta", {})
+        state = raw["model"]; meta = raw.get("meta", {})
     elif "state_dict" in raw and isinstance(raw["state_dict"], dict):
-        state = raw["state_dict"]
-        meta = raw.get("meta", {})
+        state = raw["state_dict"]; meta = raw.get("meta", {})
     else:
         state = {k: v for k, v in raw.items() if isinstance(v, torch.Tensor)}
         meta = raw.get("meta", {})
-    # Normalize common prefixes
     norm = {}
     for k, v in state.items():
         k = k.replace("module.", "")
@@ -194,28 +201,17 @@ def _extract_state_and_meta(raw: Dict[str, Any]) -> Tuple[Dict[str, torch.Tensor
     return norm, meta
 
 def _infer_classifier_shape(state: Dict[str, torch.Tensor], in_features: int, num_classes_fallback: int) -> Tuple[str, Dict[str, int]]:
-    """
-    Returns a 'type' and shape info:
-      - "seq2": classifier.0.weight [H, in], classifier.3.weight [C, H]
-      - "linear": classifier.weight [C, in]
-    """
-    info = {}
     if "classifier.0.weight" in state and "classifier.3.weight" in state:
         h, in_w = state["classifier.0.weight"].shape
         c, h2 = state["classifier.3.weight"].shape
-        info = {"hidden": int(h), "in": int(in_w), "classes": int(c)}
-        return "seq2", info
+        return "seq2", {"hidden": int(h), "in": int(in_w), "classes": int(c)}
     if "classifier.weight" in state:
         c, in_w = state["classifier.weight"].shape
-        info = {"in": int(in_w), "classes": int(c)}
-        return "linear", info
-    info = {"in": in_features, "classes": num_classes_fallback}
-    return "linear", info
-
+        return "linear", {"in": int(in_w), "classes": int(c)}
+    return "linear", {"in": in_features, "classes": num_classes_fallback}
 
 # =========================
 # Build a model COMPATIBLE with the checkpoint keys
-# (stem registered INSIDE backbone as backbone.0/1/2/3)
 # =========================
 class CBAMResNet50Compat(nn.Module):
     def __init__(self, num_classes: int, classifier_type: str = "linear", hidden: Optional[int] = None):
@@ -223,7 +219,6 @@ class CBAMResNet50Compat(nn.Module):
         inplanes = 64
         norm = nn.BatchNorm2d
 
-        # Stem and stages directly inside a big Sequential so keys are backbone.0/1/...
         conv1 = nn.Conv2d(3, inplanes, kernel_size=7, stride=2, padding=3, bias=False)
         bn1   = norm(inplanes)
         relu  = nn.ReLU(inplace=True)
@@ -234,13 +229,12 @@ class CBAMResNet50Compat(nn.Module):
         l3, c3 = _make_layer(CBAMCompatBottleneck, c2, 256, 6, stride=2, norm_layer=norm)
         l4, c4 = _make_layer(CBAMCompatBottleneck, c3, 512, 3, stride=2, norm_layer=norm)
 
-        # Assemble backbone as sequential ONLY (no top-level conv1/bn1 attrs), so sd keys match 'backbone.0/1/...'
         self.backbone = nn.Sequential(
-            conv1, bn1, relu, maxp,  # -> backbone.0/1/2/3
-            l1,                      # -> backbone.4
-            l2,                      # -> backbone.5
-            l3,                      # -> backbone.6
-            l4,                      # -> backbone.7
+            conv1, bn1, relu, maxp,  # backbone.0/1/2/3
+            l1,                      # backbone.4
+            l2,                      # backbone.5
+            l3,                      # backbone.6
+            l4,                      # backbone.7
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
         in_features = 512 * Bottleneck.expansion  # 2048
@@ -263,7 +257,6 @@ class CBAMResNet50Compat(nn.Module):
         x = torch.flatten(x, 1)
         return self.classifier(x)
 
-
 # =========================
 # Instantiate model based on CKPT
 # =========================
@@ -284,14 +277,13 @@ hidden = clf_info.get("hidden")
 model = CBAMResNet50Compat(num_classes=num_classes, classifier_type=clf_type, hidden=hidden).to(DEVICE)
 model.eval()
 
-# Strict load should now match:
+# Strict load
 MISSING_KEYS, UNEXPECTED_KEYS = [], []
 try:
     res = model.load_state_dict(STATE, strict=True)
     MISSING_KEYS, UNEXPECTED_KEYS = list(res.missing_keys), list(res.unexpected_keys)
 except Exception as e:
-    print("[FATAL] Model load failed:", e)
-    raise
+    print("[FATAL] Model load failed:", e); raise
 
 # If checkpoint classes differ from fallback, sync labels
 if num_classes != len(CLASS_NAMES):
@@ -299,11 +291,23 @@ if num_classes != len(CLASS_NAMES):
         CLASS_NAMES = [f"class_{i}" for i in range(num_classes)]
 
 # =========================
-# Inference helpers
+# Inference helpers (with logit bias)
 # =========================
+def _apply_class_logit_bias(logits: torch.Tensor) -> torch.Tensor:
+    """Add small per-class biases before softmax to correct systematic skew."""
+    if logits.ndim != 2 or not CLASS_NAMES: return logits
+    bias = torch.zeros(logits.shape[1], device=logits.device, dtype=logits.dtype)
+    for i, name in enumerate(CLASS_NAMES):
+        n = (name or "").lower()
+        if n.startswith("alternaria"): bias[i] += LOGIT_BIAS_ALTERNARIA
+        elif n.startswith("straw"):   bias[i] += LOGIT_BIAS_STRAWMITE
+        elif n.startswith("healthy"): bias[i] += LOGIT_BIAS_HEALTHY
+    return logits + bias
+
 def _forward_logits(x: torch.Tensor) -> torch.Tensor:
     with torch.no_grad():
         logits = model(x)
+        logits = _apply_class_logit_bias(logits)
         if MODEL_TEMP != 1.0:
             logits = logits / max(MODEL_TEMP, 1e-6)
     return logits
@@ -319,24 +323,42 @@ def _tta_predict(x: torch.Tensor) -> np.ndarray:
         for v in views:
             prob_list.append(torch.softmax(_forward_logits(v), dim=1))
     logp = torch.log(torch.stack(prob_list, dim=0) + 1e-12).mean(dim=0)
-    probs = torch.exp(logp)
-    probs = probs / probs.sum(dim=1, keepdim=True)
+    probs = torch.exp(logp); probs = probs / probs.sum(dim=1, keepdim=True)
     return probs[0].detach().cpu().numpy()
+
+def _probs_from_tensor(batch_x: torch.Tensor) -> torch.Tensor:
+    with torch.no_grad():
+        logits = model(batch_x)
+        logits = _apply_class_logit_bias(logits)
+        if MODEL_TEMP != 1.0:
+            logits = logits / max(MODEL_TEMP, 1e-6)
+        return torch.softmax(logits, dim=1)
+
+def _multicrop_probs(pil_img: Image.Image, use_flip: bool) -> np.ndarray:
+    base_tf = T.Compose([T.Resize(256), T.FiveCrop(IMG_SIZE)])
+    crops = base_tf(pil_img)
+    tens = [T.ToTensor()(c) for c in crops]
+    tens = [T.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])(t) for t in tens]
+    batch = torch.stack(tens, dim=0).to(DEVICE)  # [5,3,H,W]
+    if use_flip:
+        batch = torch.cat([batch, torch.flip(batch, dims=[-1])], dim=0)  # [10,3,H,W]
+    probs = _probs_from_tensor(batch).mean(dim=0)  # [C]
+    return probs.detach().cpu().numpy()
 
 def _find_last_conv_layer(m: nn.Module):
     last = None
     for module in m.modules():
-        if isinstance(module, nn.Conv2d):
-            last = module
+        if isinstance(module, nn.Conv2d): last = module
     return last
 
 def _make_heatmap(pil_img: Image.Image, tensor: torch.Tensor, class_idx: int, method: str = "layercam"):
-    if not _CAM_AVAILABLE:
-        return None
+    if not _CAM_AVAILABLE: return None
+    from pytorch_grad_cam import LayerCAM, EigenCAM
+    from pytorch_grad_cam.utils.image import show_cam_on_image
+    from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
     disp = np.array(visual_transform(pil_img)).astype(np.float32) / 255.0
     target_layer = _find_last_conv_layer(model)
-    if target_layer is None:
-        return None
+    if target_layer is None: return None
     Expl = LayerCAM if method == "layercam" else EigenCAM
     cam = Expl(model=model, target_layers=[target_layer])
     targets = [ClassifierOutputTarget(int(class_idx))]
@@ -345,16 +367,11 @@ def _make_heatmap(pil_img: Image.Image, tensor: torch.Tensor, class_idx: int, me
         heat = show_cam_on_image(disp, grayscale, use_rgb=True)
         buf = io.BytesIO(); Image.fromarray(heat).save(buf, format="PNG")
         return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
-    except Exception as e:
-        print("[WARN] CAM generation failed:", e)
-        print(traceback.format_exc())
+    except Exception:
         return None
     finally:
-        try:
-            cam.activations_and_grads.release()
-        except Exception:
-            pass
-
+        try: cam.activations_and_grads.release()
+        except Exception: pass
 
 # =========================
 # FastAPI app
@@ -383,6 +400,17 @@ def health():
         "missing_keys": MISSING_KEYS,
         "unexpected_keys": UNEXPECTED_KEYS,
         "grad_cam_available": _CAM_AVAILABLE,
+        "logit_bias": {
+            "alternaria": LOGIT_BIAS_ALTERNARIA,
+            "straw_mite": LOGIT_BIAS_STRAWMITE,
+            "healthy": LOGIT_BIAS_HEALTHY,
+        },
+        "abstain_delta": ABSTAIN_DELTA,
+        "min_conf": {
+            "healthy": MIN_CONF_HEALTHY,
+            "straw_mite": MIN_CONF_STRAWMITE,
+            "alternaria": MIN_CONF_ALTERNARIA,
+        },
     }
 
 @app.post("/predict")
@@ -398,29 +426,72 @@ async def predict(
         img = Image.open(io.BytesIO(content))
         img = ImageOps.exif_transpose(img).convert("RGB")
 
-        x = transform(img).unsqueeze(0).to(DEVICE)
-        use_tta = USE_TTA if tta is None else bool(str(tta).lower() in ("1", "true", "yes"))
+        # Choose TTA
+        use_tta_flag = USE_TTA if tta is None else bool(str(tta).lower() in ("1","true","yes"))
 
-        probs = _tta_predict(x) if use_tta else _predict_single(x)
-        idx = int(np.argmax(probs))
+        if USE_MULTICROP:
+            probs = _multicrop_probs(img, use_flip=use_tta_flag)
+        else:
+            x = transform(img).unsqueeze(0).to(DEVICE)
+            probs = _tta_predict(x) if use_tta_flag else _predict_single(x)
+
+        # Top-2 & abstain logic
+        order = np.argsort(probs)[::-1]
+        idx_top, idx_second = int(order[0]), int(order[1])
+        p_top, p_second = float(probs[idx_top]), float(probs[idx_second])
+
+        label_top    = CLASS_NAMES[idx_top] if idx_top    < len(CLASS_NAMES) else f"class_{idx_top}"
+        label_second = CLASS_NAMES[idx_second] if idx_second < len(CLASS_NAMES) else f"class_{idx_second}"
+
+        def min_conf_for(label: str) -> float:
+            l = label.lower()
+            if l.startswith("healthy"):     return MIN_CONF_HEALTHY
+            if l.startswith("straw"):       return MIN_CONF_STRAWMITE
+            if l.startswith("alternaria"):  return MIN_CONF_ALTERNARIA
+            return 0.50  # fallback
+
+        need_abstain = (p_top - p_second) < ABSTAIN_DELTA or p_top < min_conf_for(label_top)
+        decision = "abstain" if need_abstain else "final"
+
+        # Domain analysis binding
+        analysis_text = None
+        recommendations: Dict[str, Any] = {}
+        if label_top.lower().startswith("alternaria"):
+            analysis_text = ALT_TEXT
+            recommendations["fungicides"] = ALTERNARIA_FUNG
+        elif label_top.lower().startswith("straw"):
+            analysis_text = STRAW_TEXT
+            recommendations["prevention"] = STRAW_PREV
+        elif label_top.lower().startswith("healthy"):
+            analysis_text = HEALTHY_TEXT
+
         dt = (time.time() - t0) * 1000.0
-
         resp = {
-            "label": CLASS_NAMES[idx] if idx < len(CLASS_NAMES) else f"class_{idx}",
-            "probability": float(probs[idx]),
+            "decision": decision,
+            "label": label_top,
+            "probability": p_top,
+            "top2": [
+                {"class": label_top, "prob": p_top},
+                {"class": label_second, "prob": p_second},
+            ],
             "probs": (
-                [{"class": (CLASS_NAMES[i] if i < len(CLASS_NAMES) else f'class_{i}'), "prob": float(probs[i])} for i in range(len(probs))]
+                [{"class": (CLASS_NAMES[i] if i < len(CLASS_NAMES) else f'class_{i}'), "prob": float(probs[i])}
+                 for i in range(len(probs))]
                 if RETURN_ALL_PROBS else None
             ),
             "inference_time_ms": round(dt, 2),
-            "tta_used": use_tta,
+            "tta_used": use_tta_flag,
+            "analysis_text": analysis_text,
+            "recommendations": recommendations if recommendations else None,
+            "used_multicrop": USE_MULTICROP,
         }
 
+        # Optional explainability
         if explain and _CAM_AVAILABLE:
+            x_for_cam = transform(img).unsqueeze(0).to(DEVICE)
             method = (cam_method or "layercam").lower()
-            if method not in ("layercam", "eigencam"):
-                method = "layercam"
-            heatmap = _make_heatmap(img, x, idx, method=method)
+            if method not in ("layercam", "eigencam"): method = "layercam"
+            heatmap = _make_heatmap(img, x_for_cam, idx_top, method=method)
             resp["heatmap"] = heatmap
             resp["cam_method"] = method
         else:
