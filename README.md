@@ -12,8 +12,9 @@
 ## 🎥 Demo Video
 
 Watch the full walkthrough (inference, Grad-CAM, TTA, deployment):
-➡️ [WEB Deployment Demo](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/WEB%20Deployment.mp4)
+![Demo](demo.gif)
 
+👉 [WEB Deployment Demo](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/raw/main/WEB%20Deployment.mp4)
 ---
 
 ## 🔗 Resources
