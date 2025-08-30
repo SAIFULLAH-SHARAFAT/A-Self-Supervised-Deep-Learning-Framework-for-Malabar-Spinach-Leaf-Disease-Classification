@@ -10,9 +10,15 @@
 ---
 
 ## Web Demo Video
-
 <img src="WEB+Deployment.gif" width="1200" alt="Web Demo">
-
+---
+## HD Preview:
+<p align="center">
+  [![Watch demo on LinkedIn](assets/demo-preview.gif)](https://www.linkedin.com/posts/shaifullah-sharafat_a-self-supervised-deep-learning-framework-activity-7367346264226631680-4d5A)
+</p>
+<p align="center">
+  *Click here to preview and watch the full HD video on LinkedIn..*
+</p>
 ---
 
 ## 🔗 Resources
