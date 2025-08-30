@@ -11,11 +11,11 @@
 
 ## Web Demo Video
 <img src="WEB+Deployment.gif" width="1200" alt="Web Demo">
----
+
 ## HD Preview:
 <p align="center">
   <a href="https://www.linkedin.com/posts/shaifullah-sharafat_a-self-supervised-deep-learning-framework-activity-7367346264226631680-4d5A" target="_blank">
-    <img src="assets/linkedin-button.png" alt="Watch on LinkedIn" width="200"/>
+    <img src="https://img.shields.io/badge/▶%20Watch%20on-LinkedIn-blue?style=for-the-badge&logo=linkedin" alt="Watch on LinkedIn"/>
   </a>
 </p>
 
