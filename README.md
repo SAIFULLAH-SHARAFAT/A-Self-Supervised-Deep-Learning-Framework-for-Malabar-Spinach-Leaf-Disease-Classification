@@ -14,12 +14,10 @@
 ---
 ## HD Preview:
 <p align="center">
-  [![Watch demo on LinkedIn](assets/demo-preview.gif)](https://www.linkedin.com/posts/shaifullah-sharafat_a-self-supervised-deep-learning-framework-activity-7367346264226631680-4d5A)
+  <a href="https://www.linkedin.com/posts/shaifullah-sharafat_a-self-supervised-deep-learning-framework-activity-7367346264226631680-4d5A" target="_blank">
+    <img src="assets/linkedin-button.png" alt="Watch on LinkedIn" width="200"/>
+  </a>
 </p>
-<p align="center">
-  *Click here to preview and watch the full HD video on LinkedIn..*
-</p>
----
 
 ## 🔗 Resources
 
