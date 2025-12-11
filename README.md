@@ -3,97 +3,127 @@
 *A Self-Supervised Attention Framework with Vision Transformers*
 
 [![Paper](https://img.shields.io/badge/Paper-Draft-blue.svg)](#)
-[![HuggingFace Models](https://img.shields.io/badge/Models-HuggingFace-black.svg)](https://huggingface.co/saifullah03/Spinach_leaf_disease/tree/main)
-[![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-orange.svg)](https://huggingface.co/datasets/saifullah03/Spinach/tree/main)
-[![Code](https://img.shields.io/badge/Notebook-GitHub-green.svg)](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/spinach-Vresnet%2CSwin%2CCBAM.ipynb)
+[![Models](https://img.shields.io/badge/Models-HuggingFace-black.svg)](https://huggingface.co/saifullah03/Spinach_leaf_disease)
+[![Dataset](https://img.shields.io/badge/Dataset-HuggingFace-orange.svg)](https://huggingface.co/datasets/saifullah03/malabar_spinach_leaf_disease_dataset)
+[![Code](https://img.shields.io/badge/Notebooks-GitHub-green.svg)](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification)
 
 ---
 
-## Web Demo Video
+## 🎥 Web Demo Video
+
 <img src="WEB+Deployment.gif" width="1200" alt="Web Demo">
 
-## HD Preview:
+---
+
+## 🔗 HD Preview (LinkedIn)
+
 <p align="center">
   <a href="https://www.linkedin.com/posts/shaifullah-sharafat_a-self-supervised-deep-learning-framework-activity-7367346264226631680-4d5A" target="_blank">
-    <img src="https://img.shields.io/badge/▶%20Watch%20on-LinkedIn-blue?style=for-the-badge&logo=linkedin" alt="Watch on LinkedIn"/>
+    <img src="https://img.shields.io/badge/▶%20Watch%20on-LinkedIn-blue?style=for-the-badge&logo=linkedin"/>
   </a>
 </p>
 
-## 🔗 Resources
+---
 
-* **Pretrained Models (Hugging Face):**
-  [Spinach Leaf Disease Models](https://huggingface.co/saifullah03/Spinach_leaf_disease/tree/main)
+# 🔗 Resources
 
-  * `simsiam_cbam_pretrained_final.pth` → Self-supervised backbone (SimSiam only).
-  * `best_finetuned_cbam.pth` → ✅ Fine-tuned CBAM classifier (**use this for deployment**).
-  * Additional checkpoints (`*.ckpt`) available for reproducibility.
+### 🧠 Pretrained Models (HuggingFace)
 
-* **Dataset (3 Classes: Alternaria, Straw mite, Healthy):**
-  [Spinach Dataset (Hugging Face)](https://huggingface.co/datasets/saifullah03/Spinach/tree/main)
+[https://huggingface.co/saifullah03/Spinach_leaf_disease](https://huggingface.co/saifullah03/Spinach_leaf_disease)
 
-* **Web Application (Frontend + Backend):**
-  [Spinach CBAM App](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/tree/main/spinach_cbam_app)
+* `simsiam_cbam_pretrained_final.pth` → Self-supervised SimSiam backbone
+* `best_finetuned_cbam.pth` → **Final deployment model (SimSiam-CBAM-ResNet-50, CE)**
+* Additional experimental checkpoints (`*.ckpt`) available
+
+### 🗂 Dataset (3 Classes)
+
+[https://huggingface.co/datasets/saifullah03/malabar_spinach_leaf_disease_dataset](https://huggingface.co/datasets/saifullah03/malabar_spinach_leaf_disease_dataset)
+
+* **Raw images:** ~700+
+* **Augmented total:** ~2100+
+* **Classes:** Alternaria • Straw Mite • Healthy
+* Split: 70% train / 15% val / 15% test
+* Collected and verified by agricultural experts (Habiganj Agricultural University)
+
+### 📚 Code Notebooks
+
+| Model / Experiment                                     | Notebook                                                                                                                                                                                                               |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SimSiam + CBAM (final model)**                       | [simsiam-cbam-plos-rev.ipynb](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/RevP1%28Latest%29/simsiam-cbam-plos-rev.ipynb) |
+| EfficientNetB0, SpinachCNN, Spinach-ResSENet, ViT-B/16 | [spinachleaf.ipynb](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/RevP1%28Latest%29/spinachleaf.ipynb)                     |
+| Vanilla SimSiam (ResNet-50)                            | [vanilla-resnet.ipynb](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/RevP1%28Latest%29/vanilla-resnet.ipynb)               |
+| SwinV2-Base (scratch + pretrained)                     | [swin-spinach.ipynb](https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification/blob/main/RevP1%28Latest%29/swin-spinach.ipynb)                   |
 
 ---
 
-## 🧭 Project Overview
+# 🧭 Project Overview
 
-This project proposes a **lightweight and interpretable pipeline** for **spinach leaf disease detection**:
+This repository presents a **domain-optimized, interpretable, and deployment-friendly framework** for Malabar spinach leaf disease diagnosis, integrating:
 
-* **Architectures:**
+### ✔ Architectures Studied
 
-  * Custom CNN (*SpinachCNN*)
-  * ResNet + SE (*Spinach-ResSENet*)
-  * Vision Transformers (ViT, SwinV2)
-  * **SimSiam-CBAM-ResNet-50 (main deployment model)**
+* **SpinachCNN** (lightweight baseline)
+* **Spinach-ResSENet (ResNet + SE)**
+* **SpinachViT (ViT-B/16)**
+* **SwinV2-Base** (ImageNet-22k → 1k pretrained)
+* **SimSiam-CBAM-ResNet-50** → **Final recommended model for real-time deployment**
 
-* **Training Strategy:**
+### ✔ Two-Stage Training Pipeline
 
-  * Self-supervised pretraining (SimSiam) → supervised fine-tuning (Cross-Entropy + Supervised Contrastive).
+1. **Self-Supervised Pretraining (SimSiam)** on unlabeled leaf images
+2. **Supervised Fine-Tuning** (Cross-Entropy or CE + SupCon)
 
-* **Explainability (XAI):**
+### ✔ Explainability (XAI)
 
-  * Grad-CAM, Grad-CAM++, LayerCAM heatmaps show lesion-focused regions.
+* Grad-CAM
+* Grad-CAM++
+* LayerCAM
+  → Highlights biologically meaningful lesion regions
 
-* **Deployment:**
+### ✔ Deployment
 
-  * FastAPI backend + simple HTML/JS frontend for real-time leaf upload, prediction, confidence score, and Grad-CAM visualization.
-
----
-
-## 🧪 Benchmarks
-
-| Model                      | Backbone         | Pretraining  | Attention | Test Acc. (%) | TTA Acc. (%) | Macro ROC-AUC | Params (M) |
-| -------------------------- | ---------------- | ------------ | --------- | ------------- | ------------ | ------------- | ---------: |
-| SpinachCNN                 | Custom CNN       | None         | None      | 91.00         | 96.68        | 0.992         |       5.49 |
-| Spinach-ResSENet           | ResNet + SE      | None         | SE        | 96.01         | 95.35        | 0.996         |       5.53 |
-| SpinachViT                 | ViT-Small        | None         | —         | 90.70         | 91.30        | 0.985         |       85.5 |
-| SimSiam-ResNet-50          | ResNet-50        | SimSiam      | None      | 94.95         | 95.00        | 0.9984        |       23.5 |
-| **SimSiam-CBAM-ResNet-50** | ResNet-50 + CBAM | SimSiam      | **CBAM**  | **96.97**     | **97.00**    | **0.9982**    |       23.6 |
-| **SwinV2-Small (Hybrid)**  | SwinV2-Small     | ImageNet-21k | Windowed  | **97.98**     | **98.99**    | **1.0000**    |       28.0 |
-
-👉 **Note:** SwinV2 achieves the highest accuracy, but SimSiam-CBAM-ResNet-50 provides the best trade-off for web/edge deployment.
+* **FastAPI backend**
+* **HTML/CSS/JavaScript frontend**
+* Real-time inference (<800 ms on Ryzen 5600G CPU)
+* Automatic Grad-CAM visualization & disease recommendations
 
 ---
 
-## 📦 Installation
+# 🧪 Final Benchmark Results
+
+This table matches the **final manuscript**, **model-size table**, and **training notebooks**.
+
+| Model                           | Backbone         | Pretraining         | Attention | Test Acc. (%) | TTA (%)   | ROC-AUC    | Params (M) |
+| ------------------------------- | ---------------- | ------------------- | --------- | ------------- | --------- | ---------- | ---------: |
+| SpinachCNN                      | Custom CNN       | None                | None      | 91.00         | 96.68     | 0.9921     |       5.49 |
+| Spinach-ResSENet                | ResNet + SE      | None                | SE        | 96.01         | 95.35     | 0.9963     |       5.53 |
+| SpinachViT (ViT-B/16)           | ViT-Base / 16    | None                | —         | 90.70         | 91.30     | 0.9850     |      85.50 |
+| SimSiam-ResNet-50 (CE)          | ResNet-50        | SimSiam (in-domain) | None      | 91.92         | 91.92     | 0.9921     |      24.56 |
+| SimSiam-ResNet-50 (Hybrid)      | ResNet-50        | SimSiam (in-domain) | None      | 94.61         | 94.61     | 0.9850     |      24.82 |
+| **SimSiam-CBAM-ResNet-50 (CE)** | ResNet-50 + CBAM | SimSiam (in-domain) | **CBAM**  | **97.31**     | **97.31** | **0.9983** |  **27.08** |
+| SwinV2-Base (scratch)           | SwinV2-Base      | None                | Window    | 94.95         | 95.96     | 0.9970     |      86.90 |
+| **SwinV2-Base (in22k→1k)**      | SwinV2-Base      | ImageNet-22k → 1k   | Window    | **97.98**     | **98.99** | **1.0000** |      86.90 |
+
+👉 **Key Insight:**
+SwinV2-Base achieves the highest accuracy,
+but **SimSiam-CBAM-ResNet-50** offers the **best model-size / latency / accuracy trade-off** for **web and edge devices**.
+
+---
+
+# 📦 Installation
 
 ```bash
 git clone https://github.com/SAIFULLAH-SHARAFAT/A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification.git
 cd A-Self-Supervised-Deep-Learning-Framework-for-Malabar-Spinach-Leaf-Disease-Classification
 
-# Python 3.10+ recommended
 python -m venv .venv
 source .venv/bin/activate    # Windows: .venv\Scripts\activate
-
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🚀 Quickstart
-
-Run inference on a test image:
+# 🚀 Quick Inference Example
 
 ```bash
 python inference.py \
@@ -101,30 +131,27 @@ python inference.py \
   --image samples/test_leaf.jpg
 ```
 
-Expected output: predicted class, confidence score, Grad-CAM visualization.
+Returns:
+
+* Disease class
+* Confidence score
+* Grad-CAM heatmap
 
 ---
 
-## 🌐 Web Deployment
-
-The FastAPI app enables farmers/researchers to upload images and get:
-
-* Predicted class (Healthy / Alternaria / Straw mite)
-* Confidence score
-* Grad-CAM heatmaps
-* Disease-specific management advice
+# 🌐 Run the Web App (FastAPI)
 
 ```bash
 cd spinach_cbam_app
 uvicorn app.main:app --reload
 ```
 
-Then open: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+Open in browser:
+**[http://127.0.0.1:8000](http://127.0.0.1:8000)**
 
+---
 
-## 📖 Citation
-
-If you use this work, please cite:
+# 📖 Citation
 
 ```bibtex
 @article{kabya2025spinach,
@@ -135,4 +162,4 @@ If you use this work, please cite:
 }
 ```
 
-Do you want me to also make a **short “Quick Research Summary” section** (like a one-paragraph abstract) for people who won’t read the paper but still land on your repo?
+---
