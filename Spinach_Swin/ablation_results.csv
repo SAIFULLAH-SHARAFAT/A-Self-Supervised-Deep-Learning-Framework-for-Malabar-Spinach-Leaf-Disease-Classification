@@ -1,5 +1,0 @@
-name,test_acc,f1_macro,roc_auc_macro,ece,use_gaussian,gaussian_std,use_saltpepper,salt_prob,pepper_prob
-NoNoise,1.0,1.0,1.0,6.2901443303233435,,,,,
-GaussianOnly,1.0,1.0,1.0,9.767211326444992,True,0.05,,,
-SaltPepperOnly,0.98989898989899,0.9901427846633326,1.0,4.445658428500397,,,True,0.01,0.01
-BothNoises,0.9797979797979798,0.9803240740740741,1.0,6.691180997424656,True,0.05,True,0.01,0.01
