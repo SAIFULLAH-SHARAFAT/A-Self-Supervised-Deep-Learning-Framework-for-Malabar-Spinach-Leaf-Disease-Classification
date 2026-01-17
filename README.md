@@ -154,11 +154,21 @@ Open in browser:
 # 📖 Citation
 
 ```bibtex
-@article{kabya2025spinach,
-  title={Towards Practical AI for Agriculture: A Self-Supervised Attention Framework for Spinach Leaf Disease Detection},
-  author={Kabya, Nilavro Das and Sharafat, MD Shaifullah and Emu, Rahimul Islam and Opee, Mehrab Karim and Khan, Riasat},
-  journal={},
-  year={2025}
+@article{10.1371/journal.pone.0340989,
+    doi = {10.1371/journal.pone.0340989},
+    author = {Kabya, Nilavro Das AND Sharafat, MD Shaifullah AND Emu, Rahimul Islam AND Opee, Mehrab Karim AND Khan, Riasat},
+    journal = {PLOS ONE},
+    publisher = {Public Library of Science},
+    title = {Towards practical AI for agriculture: A self-supervised attention framework for Spinach leaf disease detection},
+    year = {2026},
+    month = {01},
+    volume = {21},
+    url = {https://doi.org/10.1371/journal.pone.0340989},
+    pages = {1-30},
+    abstract = {Malabar spinach is a nutrient-dense leafy vegetable widely cultivated and consumed in Bangladesh. Its productivity is often compromised by Alternaria leaf spot and straw mite infestations. This work proposes an efficient and interpretable deep learning framework for automatic Malabar spinach leaf disease classification. A curated dataset of Malabar spinach images collected from Habiganj Agricultural University and supplemented with public samples was categorized into three classes: Alternaria, straw mite, and healthy leaves. A lightweight SpinachCNN established a strong baseline, while Spinach-ResSENet, enhanced with squeeze-and-excitation modules, improved channel-wise attention and feature discrimination. A customized Vision Transformer (SpinachViT) and SwinV2-Base were further investigated to assess the benefits of transformer-based architectures under limited data. To mitigate annotation scarcity, we employed SimSiam-based self-supervised pretraining on unlabeled images, followed by supervised fine-tuning with cross-entropy or a hybrid objective combining cross-entropy and supervised contrastive loss. The best-performing domain-optimized model, SimSiam-CBAM-ResNet-50, incorporated Convolutional Block Attention Modules and achieved 97.31% test accuracy, 0.9983 macro ROC-AUC, and low calibration error, while maintaining robustness to Gaussian and salt-and-pepper noise. Although a SwinV2-Base benchmark pretrained on ImageNet-22k reached slightly higher accuracy (97.98%, 98.99% with test-time augmentation), its 86.9M parameters and reliance on large-scale pretraining reduce feasibility for edge deployment. In contrast, the SimSiam-CBAM model offers a more parameter-efficient and deployment-friendly solution for real-world agricultural applications. Model decisions are interpretable via Grad-CAM, Grad-CAM++, and LayerCAM, which consistently highlight biologically relevant lesion regions. The spinach dataset used in this study is publicly available on: https://huggingface.co/datasets/saifullah03/malabar_spinach_leaf_disease_dataset.},
+    number = {1},
+
+}
 }
 ```
 
